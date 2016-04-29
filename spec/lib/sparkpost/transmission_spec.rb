@@ -117,18 +117,21 @@ RSpec.describe SparkPost::Transmission do
           from: 'me@me.com',
           subject: 'test subject',
           text: 'hello sparky',
-          html: '<h1>Hello Sparky</h1>'
+          html: '<h1>Hello Sparky</h1>',
+          template_id: nil
         },
         options: {}
       }
 
       expect(transmission).to receive(:send_payload).with(prepared_data)
       transmission.send_message(
-        'to@me.com',
-        'me@me.com',
-        'test subject',
-        '<h1>Hello Sparky</h1>',
-        text_message: 'hello sparky'
+        {
+          to: 'to@me.com',
+          from: 'me@me.com',
+          subject: 'test subject',
+          html: '<h1>Hello Sparky</h1>',
+          text: 'hello sparky'
+        }
       )
     end
 
@@ -138,10 +141,14 @@ RSpec.describe SparkPost::Transmission do
       end
 
       transmission.send_message(
-        'to@example.com',
-        'from@example.com',
-        'test subject',
-        '<h1>Hello World</h1>')
+        {
+          to: 'to@example.com',
+          from: 'me@me.com',
+          subject: 'test subject',
+          html: '<h1>Hello Sparky</h1>',
+          text_message: 'hello sparky'
+        }
+      )
     end
 
     it 'calls prepare_attachments' do
@@ -152,10 +159,14 @@ RSpec.describe SparkPost::Transmission do
       end
 
       transmission.send_message(
-        'to@example.com',
-        'from@example.com',
-        'test subject',
-        '<h1>Hello World</h1>')
+        {
+          to: 'to@example.com',
+          from: 'me@me.com',
+          subject: 'test subject',
+          html: '<h1>Hello Sparky</h1>',
+          text_message: 'hello sparky'
+        }
+      )
     end
 
     it 'requests with correct parameters' do
@@ -167,29 +178,35 @@ RSpec.describe SparkPost::Transmission do
         expect(data[:content][:html]).to eq('<h1>Hello World</h1>')
       end
       transmission.send_message(
-        'to@example.com',
-        'from@example.com',
-        'test subject',
-        '<h1>Hello World</h1>')
+        {
+          to: 'to@example.com',
+          from: 'from@example.com',
+          subject: 'test subject',
+          html: '<h1>Hello World</h1>',
+          text_message: 'hello sparky'
+        }
+      )
     end
 
     it 'raises erorr when no content passed' do
       expect do
-        transmission.send_message(
-          ['to@example.com'],
-          'from@example.com',
-          'test subject')
+        transmission.send_message({
+          to:['to@example.com'],
+          from: 'from@example.com',
+          subject: 'test subject'
+        })
       end.to raise_error(ArgumentError).with_message(/Content missing/)
     end
 
     it 'it does not raise error when text_message passed' do
       expect do
-        transmission.send_message(
-          ['to@example.com'],
-          'from@example.com',
-          'test subject',
-          nil,
-          text_message: 'hello world')
+        transmission.send_message({
+          to: ['to@example.com'],
+          from: 'from@example.com',
+          subject: 'test subject',
+          html: nil,
+          text: 'hello world'
+        })
       end.to_not raise_error
     end
 
@@ -198,22 +215,24 @@ RSpec.describe SparkPost::Transmission do
         SparkPost::DeliveryException.new('Some delivery error'))
 
       expect do
-        transmission.send_message(
-          'to@example.com',
-          'from@example.com',
-          'test subject',
-          '<h1>Hello World</h1>')
+        transmission.send_message({
+          to: 'to@example.com',
+          from: 'from@example.com',
+          subject: 'test subject',
+          html: '<h1>Hello World</h1>'
+        })
       end.to raise_error(SparkPost::DeliveryException).with_message(
         /Some delivery error/)
     end
 
     it 'passes responses' do
       allow(transmission).to receive(:request).and_return(success: 1)
-      expect(transmission.send_message(
-        'to@example.com',
-        'from@example.com',
-        'test subject',
-        '<h1>Hello World</h1>')).to eq(success: 1)
+      expect(transmission.send_message({
+        to: 'to@example.com',
+        from: 'from@example.com',
+        subject: 'test subject',
+        html: '<h1>Hello World</h1>'
+      })).to eq(success: 1)
     end
 
     it 'sends attachments' do
@@ -231,11 +250,11 @@ RSpec.describe SparkPost::Transmission do
         expect(data[:content][:attachments].length).to eq(1)
         expect(data[:content][:attachments][0]).to eq(attachment)
       end
-      transmission.send_message(
-        ['to@example.com'],
-        'from@example.com',
-        'test subject',
-        '<h1>Hello World</h1>',
+      transmission.send_message({
+        to: ['to@example.com'],
+        from: 'from@example.com',
+        subject: 'test subject',
+        html: '<h1>Hello World</h1>'},
         options)
     end
   end

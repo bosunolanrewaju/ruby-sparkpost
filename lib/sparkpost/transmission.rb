@@ -19,14 +19,26 @@ module SparkPost
       request(endpoint, @api_key, data)
     end
 
-    def send_message(to, from, subject, html_message = nil, **options)
+    def send_message(args, **options)
       # TODO: add validations for to, from
-      html_message = content_from(options, :html) || html_message
-      text_message = content_from(options, :text) || options[:text_message]
+      to = args[:to]
+      from = args[:from]
+      subject = args[:subject]
+      html_message = args[:html]
+      text_message = args[:text]
+      template = args[:template]
 
-      if html_message.blank? && text_message.blank?
-        raise ArgumentError, 'Content missing. Either provide html_message or
-         text_message in options parameter'
+      if to.blank?
+        raise ArgumentError, 'Recipient can not be empty. Provide value for to:'
+      end
+
+      if template.blank? && from.blank?
+        raise ArgumentError, 'Sender can not be empty. Provide a value for from:'
+      end
+
+      if html_message.blank? && text_message.blank? && template.blank?
+        raise ArgumentError, 'Content missing. Either provide html or
+         text or template in options parameter'
       end
 
       options_from_args = {
@@ -34,15 +46,15 @@ module SparkPost
         content: {
           from: from,
           subject: subject,
-          text: options.delete(:text_message),
-          html: html_message
+          text: text_message,
+          html: html_message,
+          template_id: template
         },
         options: {}
       }
 
       options.merge!(options_from_args) { |_k, opts, _args| opts }
       add_attachments(options)
-
       send_payload(options)
     end
 
